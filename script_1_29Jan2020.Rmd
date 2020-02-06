@@ -1,0 +1,437 @@
+---
+title: "Serpula_lacymans"
+author: "Emily Giroux"
+date: "1/29/2020"
+output: pdf_document
+fontsize: 11pt
+geometry: margin=1in
+urlcolor: blue
+header-includes: \usepackage{xcolor}
+---
+
+```{r, global_options, eval=TRUE, echo=FALSE, cache=TRUE}
+#Set the global options for knitr
+library(knitr)
+opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE, fig.align = 'center',
+               cache = FALSE, collapse = TRUE, echo = FALSE, eval = FALSE, include = FALSE,
+               message = FALSE, quietly = TRUE, results = 'hide', warn.conflicts = FALSE, 
+               warning = FALSE)
+```
+
+```{r, installation1, eval=TRUE, echo=FALSE, include=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+#Installing required packages
+r = getOption("repos")
+r["CRAN"] = "http://cran.us.r-project.org"
+options(repos = r)
+
+if(!require(devtools)) install.packages("devtools")
+
+if (!requireNamespace("BiocManager"))
+    install.packages("BiocManager")
+BiocManager::install()
+
+library("BiocManager")
+.cran_packages <- c("data.table", "dplyr", "filesstrings", 
+                    "ggplot2", "gridExtra", "kableExtra", 
+                    "knitr", "mgsub", "reshape2", "rprojroot",    
+                    "R.utils", "seqinr", "tidyr")
+.bioc_packages <- c("BiocStyle", "Biostrings", "SRAdb")
+.inst <- .cran_packages %in% installed.packages()
+if(any(!.inst)) {
+   install.packages(.cran_packages[!.inst])
+}
+.inst <- .bioc_packages %in% installed.packages()
+if(any(!.inst)) {
+  BiocManager::install(.bioc_packages[!.inst], ask = FALSE)
+}
+sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
+```
+
+```{r sourcing_my_functions, echo=FALSE, eval=TRUE, include=FALSE, cache=TRUE}
+#Source our custom R scripts:    
+#For this we will use the rprojroot package to set the directory structures. This will help us when finding our files to source functions. We specify ours is an RStudio project. The root object contains a function that will help us locate our package R files regarless of our current working directory.
+library(rprojroot)
+root <- rprojroot::is_rstudio_project
+scriptsPath <- root$make_fix_file(".")("R")
+scripts  <- dir(root$find_file("R", path = root$find_file()))
+scriptsl <- paste(scriptsPath, scripts, sep = "//")
+
+# Record the path to the environment images directory:
+sharedPath <- "/isilon/cfia-ottawa-fallowfield/users/girouxeml/PIRL_working_directory"
+
+lapply(scriptsl, source)
+
+# Make a dedicated analysis directory for this project in my PIRL_working_directory
+analysis <- "serpulaLacrymans"
+sharedPathAn <- paste(sharedPath, analysis, sep = "/")
+dir.create(sharedPathAn, showWarnings = TRUE, recursive = FALSE)
+
+# Make a dedicated environment directory for this project in my GitHub_Repos/r_environments directory:
+imageDirPath <- "/home/CFIA-ACIA/girouxeml/GitHub_Repos/r_environments/Serpula_lacrymans/"
+dir.create("/home/CFIA-ACIA/girouxeml/GitHub_Repos/r_environments/Serpula_lacrymans", 
+           showWarnings = TRUE, recursive = FALSE)
+
+# Create the name for the environment data file for this project
+baseImage <- "Serpula_lacrymans_1_29Jan2020.RData"
+
+load(paste(imageDirPath, baseImage, sep = ""))
+save.image(paste(imageDirPath, baseImage, sep = ""))
+```
+
+Save a file of the S. lacrymans ITS sequence that we have as our own reference file in the sharedPathAn directory:
+```{r}
+library(Biostrings)
+```
+
+Paste the ITS sequence below and assign it to variable
+```{r}
+slacrymansITSseq <- "AAGGATCATTATCGATTCAACGAAGTGCTTGTGAAGTTGTGCTGGCCTCTCTCGAGGCATGTGCACGCTTTATGGGTCTTCACACACCCACACCTGTGAACCAACTGTAGGTCTTTCGGGACCTATGTCTTCTCATAACACACTGTATGTCTAGAATGTCATTATGATTATCGTCTGCTTCCTCTGTGGAGTTGGGCTGATAAGATAAACAATATACAACTTTCAGCAACGGATCTCTTGGCTCTCGCATCGATGAAGAACGCAGCGAATTGCGATATGTAATGTGAATTGCAGATTTTCAGTGAATCATCGAATCTTTGAACGCACCTTGCGCTCCTTGGTATTCCGAGGAGCATGCCTGTTTGAGTGTCATTAAATTCTCAACCCCATCAATTTGTTTTGATTGTGGGCTTGGATTGTGGGGGCTTGCTGGTGGACTCTTGTTCATCGGCTCCTCTGAAATGTATTAGCAAAGGTTGATGTGCGAACCAGTGTCTCGGTGTGATAATGATCATCGTGTCTGACGTGCAGTGTTCCTGTGCTTACAGTCGTTGTCGCAAGACAACATTTTTGAACCTTTGACCTCAAATCAGGTAGGATTACCCGCTGAACTTAAG"
+```
+
+Create a fasta entry with the name for the sequence, and write it to file:
+```{r}
+slacrymansITSobj <- DNAStringSet(slacrymansITSseq)
+names(slacrymansITSobj) <- "slacrymansITS"
+writeXStringSet(slacrymansITSobj, paste(sharedPathAn, "slacrymansITS_nuccoreGU066830.1.fasta", sep = "/"))
+```
+
+If we want to read the ITS fastq from file into R:
+```{r}
+slacrymansITS <- readDNAStringSet(paste(sharedPathAn, "slacrymansITS_nuccoreGU066830.1.fasta", sep = "/"), format = "fasta")
+```
+
+NCBI blast to design in-silico S. lacrymans probes
+1. Blastn ITS sequence with parameters:
+- Database: Nucleotide collection (nr/nt)
+- Organism: Exclude Serpula lacrymans (taxid:85982)
+- Exclude: uncultured/environmental sample sequences
+2. With NCBI BLAST results:
+- Download FASTA (aligned sequences)
+- Import into Geneious
+3. With query and blast sequences in Geneious:
+- Select all, including query, and run MAFFT nucleotide alignment 
+- E-INS-i, with default, and 
+- Automatically determine sequences' direction
+- adjust direction more accurately
+4. Design 80 bp in-silico probes specific to query S. lacrymans:
+In alignment,
+- set query as the reference sequence
+- identify 3 regions of hypervariability to reference sequence to act as in-silico probes, 80 bp length each
+- write probes to file add here and register saved file
+
+In-silico probes designed in Geneious
+```{r}
+ncbiBlastResFa <- paste(sharedPathAn, "blast_slacrymansITS_resultsAligned.fasta", sep = "/")
+geneiousFaAlign <- paste(sharedPathAn, "blast_slacrymansITS_resultsAlignedMAFFT.fasta", sep = "/")
+slacrymansProbesITS   <- paste(sharedPathAn, "slacrymansITSinSilicoProbesITS.fasta", sep = "/")
+probesSeqs <- readDNAStringSet(slacrymansProbesITS, format = "fasta")
+slacrymans550_656_ITS <- "CATCGTGTCTGACGTGCAGTGTTCCTGTGCTTACAGTCGTTGTCGCAAGACAACATTTTTGAACCTTTGACCTCAAATCA"
+slacrymans403_494_ITS <- "AACCCCATCAATTTGTTTTGATTGTGGGCTTGGATTGTGGGGGCTTGCTGGTGGACTCTTGTTCATCGGCTCCTCTGAAA"
+slacrymans136_220_ITS <- "GTCTTCTCATAACACACTGTATGTCTAGAATGTCATTATGATTATCGTCTGCTTCCTCTGTGGAGTTGGGCTGATAAGAT"
+
+slacrymansITSprobes <- DNAStringSet(c(slacrymans550_656_ITS, slacrymans403_494_ITS, slacrymans136_220_ITS))
+names(slacrymansITSprobes) <- c("slacrymans550_656_ITS", "slacrymans403_494_ITS", "slacrymans136_220_ITS")
+```
+
+
+Obtain the SRAmetadb - it's a big file and takes a long time, only need to do once unless it's been a long time since first download and there has been an update to the database. 
+```{r}
+library("SRAdb")
+dbDirPath <- "/isilon/cfia-ottawa-fallowfield/users/girouxeml/Databases/"
+srafile <- getSRAdbFile(destdir = paste(dbDirPath, "sra", sep = ""), destfile = "SRAmetadb.sqlite.gz", method="auto")
+```
+
+Use SQLite to connect to the SRA database
+```{r}
+library("SRAdb")
+sra_con <- dbConnect(dbDriver("SQLite"), srafile)
+```
+
+
+Get SRAs from EBI: These are those SRAs that were not on NCBI. Obtained these as their fastq.
+```{r}
+library(data.table)
+sra_searchDirEBI <- paste(sharedPathAn, "sra_searchEBI", sep = "/")
+dir.create(sra_searchDirEBI, showWarnings = TRUE, recursive = FALSE)
+
+## Fulltext search SRA meta data using SQLite fts3 module
+rs <- as.data.table(getSRA(search_terms = 'forest* decay ITS', out_types=c('run','study'), sra_con=sra_con))
+
+getSRAfile(in_acc = rs$run, sra_con = sra_con, destDir = sra_searchDirEBI, 
+           fileType = 'fastq', srcType = 'ftp', makeDirectory = FALSE, method = 'curl', ascpCMD = NULL )
+
+# See what was downloaded:
+sraFqs <- list.files(sra_searchDirEBI)
+length(sraFqs)
+sraFqs <- gsub("_1.fastq.gz", "", sraFqs)
+sraFqs <- gsub("_2.fastq.gz", "", sraFqs)
+sraFqs <- gsub(".fastq.gz", "", sraFqs)
+sraFqs <- unique(sraFqs)
+
+length(sraFqs)
+# 1174
+length(rs$run)
+# 1174
+```
+
+```{r}
+library("SRAdb")
+sra_con <- dbConnect(dbDriver("SQLite"), srafile)
+
+pairedFastq <- list.files(sra_searchDirEBI, pattern = "_1.fastq.gz")
+pairedFastq <- gsub("_1.fastq.gz", "", pairedFastq)
+
+metadataSRApaired <- data.table(SRA=pairedFastq)
+metadataSRApaired$readType <- "paired"
+metadataSRApaired$fq1Name <- paste(metadataSRApaired$SRA, "_1.fastq", sep = "")
+metadataSRApaired$fq2Name <- paste(metadataSRApaired$SRA, "_2.fastq", sep = "")
+metadataSRApaired$fq1Path <- paste(sra_searchDirEBI, metadataSRApaired$fq1Name, sep = "/")
+metadataSRApaired$fq2Path <- paste(sra_searchDirEBI, metadataSRApaired$fq2Name, sep = "/")
+
+singleFastq <- grep(list.files(sra_searchDirEBI), pattern = '_', invert = TRUE, value = TRUE)
+singleFastq <- gsub(".fastq.gz", "", singleFastq)
+
+metadataSingle <- data.table(SRA=singleFastq)
+metadataSingle$readType <- "single"
+metadataSingle$fq1Name <- paste(metadataSingle$SRA, ".fastq", sep = "")
+metadataSingle$fq2Name <- "NA"
+metadataSingle$fq1Path <- paste(sra_searchDirEBI, metadataSingle$fq1Name, sep = "/")
+metadataSingle$fq2Path <- "NA"
+
+metadata <- rbind(metadataSRApaired, metadataSingle)
+```
+
+Gunzip the single and paired R1 reads:
+```{r}
+prefix <- "gunzipFastq"
+cmd <- paste("cd ", sra_searchDirEBI, " && gunzip ", paste(metadata$fq1Path, ".gz", sep = ""), sep = "")
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+```
+
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+Make a directory to hold the fasta files converted from fastq:
+```{r}
+fastaPath <- paste(sharedPathAn, "fasta", sep = "/")
+dir.create(fastaPath, showWarnings = TRUE, recursive = FALSE)
+```
+
+After completion of "gunzipFastq":
+Convert the fastq files to fasta format for makeblastdb using the fastx_toolkit (downloaded to conda env python3env):
+```{r}
+prefix <- "fastq2fastas"
+metadata$fa1 <- paste(metadata$SRA, ".fasta", sep = "")
+metadata$fa1Path <- paste(fastaPath, metadata$fa1, sep = "/")
+cmd <- paste("conda activate python3env && cd ", fastaPath,
+             " && fastq_to_fasta -i ", metadata$fq1Path, 
+             " -o ", metadata$fa1Path,  
+             " -v && conda deactivate", sep = "")
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+```
+
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+After completion of "fastq2fastas":
+Gzip the fastq files:
+```{r}
+prefix <- "gzipFastq"
+cmd <- paste("cd ", sra_searchDirEBI, " && gzip ", metadata$fq1Name, sep = "")
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+```
+
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+Make a blastDB directory
+```{r}
+blastDB <- paste(sharedPathAn, "blastdb", sep = "/")
+dir.create(blastDB, showWarnings = TRUE, recursive = FALSE)
+```
+
+Create a single concatenated fasta file for making a blast database:
+```{r}
+prefix <- "catAllfasta"
+cmd <- paste("cat ", metadata$fa1Path, " >> ", paste(blastDB, "all.fasta", sep = "/"), sep = "")
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+```
+
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+After completion of "catAllfasta":
+Gzip the fasta files:
+```{r}
+prefix <- "gzipFasta"
+cmd <- paste("cd ", fastaPath, " && gzip ", metadata$fa1, sep = "")
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+```
+
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+Create and run command to make blastdb:
+```{r}
+prefix <- "makeblastDB"
+cmd <- paste("conda activate python3env && cd ", blastDB, 
+             " && makeblastdb -in all.fasta -dbtype nucl ",
+             " -out sraFastaDB -logfile sraFastaDB.log && conda deactivate", sep = "")
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+```
+
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+After completion of "makeblastDB":
+Gzip the all.fasta files
+```{r}
+prefix <- "gzipAllFasta"
+cmd <- paste("cd ", blastDB, " && gzip all.fasta", sep = "")
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+```
+
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+Blast our in-silico probes against the custome databases we've built:    
+If you get the error:     
+Error: Executable for blastn not found! Please make sure that the software is correctly installed and, if necessary, path variables are set.     
+You need to find where blastn is onyour system and add it to the system paths:     
+$ which blastn    
+/opt/bio/ncbi-blast+/bin/blastn     
+
+In R-console:
+```{r}
+?blast     
+Sys.which("blastn")     
+Sys.getenv("PATH")    
+# [1] "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"     
+Sys.setenv(PATH=paste(Sys.getenv("PATH"), "/opt/bio/ncbi-blast+/bin", sep= .Platform$path.sep))     
+Sys.getenv("PATH")
+# [1] "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/opt/bio/ncbi-blast+/bin/blastn:/opt/bio/ncbi-blast+/bin"     
+Sys.which("blastn")     
+# "/opt/bio/ncbi-blast+/bin/blastn"      
+```
+
+```{r}
+devtools::install_github("mhahsler/rBLAST")
+library("rBLAST")
+
+blastDBpath <- paste(blastDB, "sraFastaDB", sep = "/")
+bl <- blast(db=blastDBpath)
+```
+
+Query the probes to the blpairedR1s database:
+```{r}
+library("rBLAST")
+cl1 <- predict(bl, slacrymansITSprobes["slacrymans136_220_ITS",])
+cl1$SRA <- gsub("\\..*", "", cl1$SubjectID)
+table(cl1$SRA)
+
+cl2 <- predict(bl, slacrymansITSprobes["slacrymans403_494_ITS",])
+cl2$SRA <- gsub("\\..*", "", cl2$SubjectID)
+table(cl2$SRA)
+
+cl3 <- predict(bl, slacrymansITSprobes["slacrymans550_656_ITS",])
+cl3$SRA <- gsub("\\..*", "", cl3$SubjectID)
+table(cl3$SRA)
+
+clAllresults <- rbind(cl1, cl2, cl3)
+#clAllResTbl <- rbind(clPaired_Probe1, clSingles_Probe2, clSingles_Probe3)
+```
+
+Get metadata for all unique SRAs in the clAllResTbl
+```{r}
+library("SRAdb")
+# re-open the connection:
+sra_con <- dbConnect(dbDriver("SQLite"), srafile)
+uniqueSRAs <- unique(clAllresults$SRA)
+uniqueSRAsFqInfor <- getFASTQinfo(in_acc = uniqueSRAs, sra_con = sra_con, srcType = 'ftp')
+listSRAfile(in_acc = uniqueSRAs, sra_con = sra_con, fileType = 'sra', srcType = 'ftp')
+sraXrefGEOdt <- sraConvert(in_acc = uniqueSRAs, out_type = c("sra", "submission", "study", "sample", "experiment", "run"), sra_con = sra_con)
+sraXrefGEOdt <- as.data.table(sraXrefGEOdt)
+clAllresults2 <- as.data.table(clAllresults)
+
+setkey(clAllresults2, SRA)
+head(clAllresults2)
+setkey(sraXrefGEOdt, run)
+head(sraXrefGEOdt)
+
+clAllresults3 <- clAllresults2[sraXrefGEOdt]
+```
+
+
+```{r}
+devtools::install_github("ropensci/rentrez")
+library("rentrez")
+entrez_dbs()
+```
+
+```{r}
+entrez_db_searchable(db = "biosample")
+```
+Retrieve sample information - geographic location, latitude and longitude, isolation source, collection date, or all available sample attributes
+```{r}
+library(data.table)
+xx <- c("title", "uid", "accession", "publicationdate", "organisation", 
+        "taxonomy", "organism", "sourcesample", "isolationSource", 
+        "sampleName", "host", "collectionDate", "geographicLocation", "geoCoordinates", 
+        "ownerFullName")
+
+for(i in xx)sraXrefTbl[,i] <- NA
+
+install.packages("textutils")
+library("XML")
+
+for(i in 1:nrow(sraXrefTbl)){
+  res <- entrez_search("biosample", term=sraXrefGEOdt$sample[i])
+  esums <- entrez_summary("biosample", id = res$ids)
+  title <- extract_from_esummary(esums, "title")
+  uid <- extract_from_esummary(esums, "uid")
+  accession <- extract_from_esummary(esums, "accession")
+  publicationdate <- extract_from_esummary(esums, "publicationdate")
+  organisation <- extract_from_esummary(esums, "organization")
+  taxonomy <- extract_from_esummary(esums, "taxonomy")
+  organism <- extract_from_esummary(esums, "organism")
+  sourcesample <- extract_from_esummary(esums, "sourcesample")
+  sraXrefTbl$title[i] <- title
+  sraXrefTbl$uid[i] <- uid
+  sraXrefTbl$accession[i] <- accession
+  sraXrefTbl$publicationdate[i] <- publicationdate
+  sraXrefTbl$organisation[i] <- organisation
+  sraXrefTbl$taxonomy[i] <- taxonomy
+  sraXrefTbl$organism[i] <- organism
+  sraXrefTbl$sourcesample[i] <- sourcesample
+  sampledata <- extract_from_esummary(esums, "sampledata")
+  raw_html <- textutils::HTMLdecode(sampledata)
+  parsed_html <- XML::htmlTreeParse(raw_html, useInternalNodes = TRUE) 
+  sraXrefTbl$isolationSource[i] <- XML::xmlValue(parsed_html[["//attribute[@attribute_name='isolation_source']"]])
+  sraXrefTbl$sampleName[i] <- XML::xmlValue(parsed_html[["//ids/id[@db_label='Sample name']"]])
+  sraXrefTbl$collectionDate[i] <- XML::xmlValue(parsed_html[["//attribute[@attribute_name='collection_date']"]])
+  sraXrefTbl$geographicLocation[i] <- XML::xmlValue(parsed_html[["//attribute[@attribute_name='geo_loc_name']"]])
+  sraXrefTbl$geoCoordinates[i] <- XML::xmlValue(parsed_html[["//attribute[@attribute_name='lat_lon']"]])
+  sraXrefTbl$ownerFullName[i] <- paste(XML::xmlValue(parsed_html[["//owner/contacts//name/first"]]), 
+                           XML::xmlValue(parsed_html[["//owner/contacts//name/last"]]), sep = "_")
+}
+```
+
+Write table to file:
+```{r}
+library("data.table")
+write.table(sraXrefTbl, paste(sharedPathAn, "/metadata_of_probe-SRA_blasthits.csv", sep = ""), sep = ",")
+```
