@@ -74,7 +74,7 @@ dir.create("/home/CFIA-ACIA/girouxeml/GitHub_Repos/r_environments/Serpula_lacrym
            showWarnings = TRUE, recursive = FALSE)
 
 # Create the name for the environment data file for this project
-baseImage <- "Serpula_lacrymans_1_29Jan2020.RData"
+baseImage <- "Serpula_lacrymans_21_Feb2020.RData"
 
 load(paste(imageDirPath, baseImage, sep = ""))
 save.image(paste(imageDirPath, baseImage, sep = ""))
@@ -86,7 +86,7 @@ sharedPath <- "/isilon/cfia-ottawa-fallowfield/users/girouxeml/PIRL_working_dire
 analysis <- "serpulaLacrymans"
 sharedPathAn <- paste(sharedPath, analysis, sep = "/")
 imageDirPath <- "/home/CFIA-ACIA/girouxeml/GitHub_Repos/r_environments/Serpula_lacrymans/"
-baseImage <- "Serpula_lacrymans_1_29Jan2020.RData"
+baseImage <- "Serpula_lacrymans_21_Feb2020.RData"
 load(paste(imageDirPath, baseImage, sep = ""))
 ```
 
@@ -274,11 +274,7 @@ getSRAfile(in_acc = filteredDT$run, sra_con = sra_con, destDir = sra_searchDirEB
 ```{r}
 library("data.table")
 sraFqs <- list.files(sra_searchDirEBI)
-sraIDsGotten <- gsub(".fastq.gz", "", sraFqs)
-sraIDsGotten <- gsub(".fastq", "", sraIDsGotten)
-sraIDsGotten <- gsub("_1", "", sraIDsGotten)
-sraIDsGotten <- gsub("_2", "", sraIDsGotten)
-srasToGet <- filteredDT[which(!filteredDT$run %in% sraIDsGotten)]
+srasMissing <- srasToGet(sraFqs, filteredDT)
 ```
 
 Try to get the remaining SRA fastq files that were not obtained on the first try:    
@@ -311,11 +307,10 @@ stopCluster(cluster)
 
 Check to see if all files were downloaded, and if not, run the commands below to update srasToGet and re-run the loop above. Note - this is really fast when run on R command line on the cluster.
 ```{r}
+library("data.table")
 sraFqs <- list.files(sra_searchDirEBI)
-sraIDsGotten <- gsub(".fastq.gz", "", sraFqs)
-sraIDsGotten <- gsub("_1", "", sraIDsGotten)
-sraIDsGotten <- gsub("_2", "", sraIDsGotten)
-srasToGet <- filteredDT[which(!filteredDT$run %in% sraIDsGotten)]
+srasMissing <- srasToGet(sraFqs, filteredDT)
+
 length(srasToGet$run)
 
 write.table(srasToGet$run, row.names = FALSE, col.names = FALSE, quote = FALSE, path = paste(sharedPathAn, srasNotRetrieved.txt, sep = "/"))
@@ -659,31 +654,4 @@ blastHitSeqsSet <- DNAStringSet(blastHitSeqs$sseq)
 names(blastHitSeqsSet) <- blastHitSeqs$saccver
 writeXStringSet(blastHitSeqsSet, paste(sharedPathAn, "sequencesOfBlastHits.fasta", sep = "/"))
 head(blastHitSeqsSet)
-```
-
-
-
-
-
-
-
-
-
-
-
-
-#############################################################################################################
-
-```{r}
-# nrpl.data.m2 <- foreach (i=1:dim(nrpl.data.m)[1],.packages = c("rentrez"), .combine=cbind) %dopar% {
-#    
-#     res <- entrez_search(db = "protein", term = paste(as.character(nrpl.data.m$sacc[i]),"[ACCN]",sep=""))
-#     esums <- entrez_summary(db = "protein", id = res$ids)
-#       
-#     res1 <- entrez_search(db = "taxonomy", term = paste(esums$taxid,"[uid]",sep=""))
-#     esums1 <- entrez_summary(db = "taxonomy", id = res1$ids)
-#     
-#     nrpl.data.m[i,c(13:15)] <- c(esums$taxid,paste(esums1$genus,esums1$species,sep=" "),esums$organism)
-#     
-#   }
 ```
