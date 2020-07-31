@@ -12,10 +12,9 @@ header-includes: \usepackage{xcolor}
 ```{r, global_options, eval=TRUE, echo=FALSE, cache=TRUE}
 #Set the global options for knitr
 library("knitr")
-opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE, fig.align = 'center',
-               cache = FALSE, collapse = TRUE, echo = FALSE, eval = FALSE, include = FALSE,
-               message = FALSE, quietly = TRUE, results = 'hide', warn.conflicts = FALSE, 
-               warning = FALSE)
+opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE, fig.align = 'center',cache = FALSE, 
+               collapse = TRUE, echo = FALSE, eval = FALSE, include = FALSE, message = FALSE, 
+               quietly = TRUE, results = 'hide', warn.conflicts = FALSE, warning = FALSE)
 ```
 
 ```{r, installation1, eval=TRUE, echo=FALSE, include=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
@@ -31,9 +30,8 @@ if (!requireNamespace("BiocManager"))
 BiocManager::install()
 
 library("BiocManager")
-.cran_packages <- c("data.table", "doSNOW", "dplyr", "filesstrings", 
-                    "ggplot2", "gridExtra", "kableExtra", 
-                    "knitr", "mgsub", "reshape2", "rprojroot",    
+.cran_packages <- c("data.table", "doSNOW", "dplyr", "filesstrings", "ggplot2", 
+                    "gridExtra", "kableExtra", "knitr", "mgsub", "reshape2", "rprojroot",    
                     "R.utils", "seqinr", "stringr", "textutils", "tidyr")
 .bioc_packages <- c("BiocStyle", "Biostrings", "SRAdb")
 .inst <- .cran_packages %in% installed.packages()
@@ -49,38 +47,44 @@ sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
 devtools::install_github("ropensci/rentrez")
 ```
 
+Source our custom R scripts:    
+For this we will use the rprojroot package to set the directory structures. This will help us when finding our files to source functions. We specify ours is an RStudio project. The root object contains a function that will help us locate our package R files regarless of our current working directory.
 ```{r sourcing_my_functions, echo=FALSE, eval=TRUE, include=FALSE, cache=TRUE}
-#Source our custom R scripts:    
-#For this we will use the rprojroot package to set the directory structures. This will help us when finding our files to source functions. We specify ours is an RStudio project. The root object contains a function that will help us locate our package R files regarless of our current working directory.
 library("rprojroot")
 root <- rprojroot::is_rstudio_project
 scriptsPath <- root$make_fix_file(".")("R")
 scripts  <- dir(root$find_file("R", path = root$find_file()))
 scriptsl <- paste(scriptsPath, scripts, sep = "//")
+```
 
-# Record the path to the environment images directory:
+Record the path to the environment images directory:
+```{r}
 sharedPath <- "/isilon/cfia-ottawa-fallowfield/users/girouxeml/PIRL_working_directory"
-
 lapply(scriptsl, source)
+```
 
-# Make a dedicated analysis directory for this project in my PIRL_working_directory
+Make a dedicated analysis directory for this project in my PIRL_working_directory
+```{r}
 analysis <- "serpulaLacrymans"
 sharedPathAn <- paste(sharedPath, analysis, sep = "/")
 dir.create(sharedPathAn, showWarnings = TRUE, recursive = FALSE)
+```
 
-# Make a dedicated environment directory for this project in my GitHub_Repos/r_environments directory:
+Make a dedicated environment directory for this project in my GitHub_Repos/r_environments directory:
+```{r}
 imageDirPath <- "/home/CFIA-ACIA/girouxeml/GitHub_Repos/r_environments/Serpula_lacrymans/"
 dir.create("/home/CFIA-ACIA/girouxeml/GitHub_Repos/r_environments/Serpula_lacrymans", 
            showWarnings = TRUE, recursive = FALSE)
+```
 
-# Create the name for the environment data file for this project
+Create the name for the environment data file for this project
+```{r}
 baseImage <- "Serpula_lacrymans_21_Feb2020.RData"
-
 load(paste(imageDirPath, baseImage, sep = ""))
 save.image(paste(imageDirPath, baseImage, sep = ""))
 ```
 
-
+When re-restart a session, we can load out environment quickly by running this chunk:
 ```{r}
 sharedPath <- "/isilon/cfia-ottawa-fallowfield/users/girouxeml/PIRL_working_directory"
 analysis <- "serpulaLacrymans"
@@ -90,30 +94,22 @@ baseImage <- "Serpula_lacrymans_21_Feb2020.RData"
 load(paste(imageDirPath, baseImage, sep = ""))
 ```
 
-```{r}
-save.image(paste(imageDirPath, baseImage, sep = ""))
-```
-
-Save a file of the S. lacrymans ITS sequence that we have as our own reference file in the sharedPathAn directory:
+Save a file of the S. lacrymans ITS sequence that we have as our own reference file in the sharedPathAn directory, or paste it here and load it with the Biostrings package:
 ```{r}
 library("Biostrings")
-```
-
-Paste the ITS sequence below and assign it to variable
-```{r}
 slacrymansITSseq <- "AAGGATCATTATCGATTCAACGAAGTGCTTGTGAAGTTGTGCTGGCCTCTCTCGAGGCATGTGCACGCTTTATGGGTCTTCACACACCCACACCTGTGAACCAACTGTAGGTCTTTCGGGACCTATGTCTTCTCATAACACACTGTATGTCTAGAATGTCATTATGATTATCGTCTGCTTCCTCTGTGGAGTTGGGCTGATAAGATAAACAATATACAACTTTCAGCAACGGATCTCTTGGCTCTCGCATCGATGAAGAACGCAGCGAATTGCGATATGTAATGTGAATTGCAGATTTTCAGTGAATCATCGAATCTTTGAACGCACCTTGCGCTCCTTGGTATTCCGAGGAGCATGCCTGTTTGAGTGTCATTAAATTCTCAACCCCATCAATTTGTTTTGATTGTGGGCTTGGATTGTGGGGGCTTGCTGGTGGACTCTTGTTCATCGGCTCCTCTGAAATGTATTAGCAAAGGTTGATGTGCGAACCAGTGTCTCGGTGTGATAATGATCATCGTGTCTGACGTGCAGTGTTCCTGTGCTTACAGTCGTTGTCGCAAGACAACATTTTTGAACCTTTGACCTCAAATCAGGTAGGATTACCCGCTGAACTTAAG"
 ```
 
 Create a fasta entry with the name for the sequence, and write it to file:
 ```{r}
-slacrymansITSobj <- DNAStringSet(slacrymansITSseq)
+slacrymansITSobj <- Biostrings::DNAStringSet(slacrymansITSseq)
 names(slacrymansITSobj) <- "slacrymansITS"
-writeXStringSet(slacrymansITSobj, paste(sharedPathAn, "slacrymansITS_nuccoreGU066830.1.fasta", sep = "/"))
+Biostrings::writeXStringSet(slacrymansITSobj, paste(sharedPathAn, "slacrymansITS_nuccoreGU066830.1.fasta", sep = "/"))
 ```
 
 If we want to read the ITS fastq from file into R:
 ```{r}
-slacrymansITS <- readDNAStringSet(paste(sharedPathAn, "slacrymansITS_nuccoreGU066830.1.fasta", sep = "/"), format = "fasta")
+slacrymansITS <- Biostrings::readDNAStringSet(paste(sharedPathAn, "slacrymansITS_nuccoreGU066830.1.fasta", sep = "/"), format = "fasta")
 ```
 
 NCBI blast to design in-silico S. lacrymans probes
@@ -140,12 +136,12 @@ In-silico probes designed in Geneious
 ncbiBlastResFa <- paste(sharedPathAn, "blast_slacrymansITS_resultsAligned.fasta", sep = "/")
 geneiousFaAlign <- paste(sharedPathAn, "blast_slacrymansITS_resultsAlignedMAFFT.fasta", sep = "/")
 slacrymansProbesITS   <- paste(sharedPathAn, "slacrymansITSinSilicoProbesITS.fasta", sep = "/")
-probesSeqs <- readDNAStringSet(slacrymansProbesITS, format = "fasta")
+probesSeqs <- Biostrings::readDNAStringSet(slacrymansProbesITS, format = "fasta")
 slacrymans550_656_ITS <- "CATCGTGTCTGACGTGCAGTGTTCCTGTGCTTACAGTCGTTGTCGCAAGACAACATTTTTGAACCTTTGACCTCAAATCA"
 slacrymans403_494_ITS <- "AACCCCATCAATTTGTTTTGATTGTGGGCTTGGATTGTGGGGGCTTGCTGGTGGACTCTTGTTCATCGGCTCCTCTGAAA"
 slacrymans136_220_ITS <- "GTCTTCTCATAACACACTGTATGTCTAGAATGTCATTATGATTATCGTCTGCTTCCTCTGTGGAGTTGGGCTGATAAGAT"
 
-slacrymansITSprobes <- DNAStringSet(c(slacrymans550_656_ITS, slacrymans403_494_ITS, slacrymans136_220_ITS))
+slacrymansITSprobes <- Biostrings::DNAStringSet(c(slacrymans550_656_ITS, slacrymans403_494_ITS, slacrymans136_220_ITS))
 names(slacrymansITSprobes) <- c("slacrymans550_656_ITS", "slacrymans403_494_ITS", "slacrymans136_220_ITS")
 ```
 
@@ -154,35 +150,44 @@ Obtain the SRAmetadb - it's a big file and takes a long time, only need to do on
 ```{r}
 library("SRAdb")
 dbDirPath <- "/isilon/cfia-ottawa-fallowfield/users/girouxeml/Databases/"
-srafile <- getSRAdbFile(destdir = paste(dbDirPath, "sra", sep = ""), destfile = "SRAmetadb.sqlite.gz", method="auto")
+dir.create(paste(dbDirPath, "sraDB", sep = "/"), showWarnings = TRUE, recursive = FALSE)
+srafile <- SRAdb::getSRAdbFile(destdir = paste(dbDirPath, "sraDB", sep = ""), destfile = "SRAmetadb.sqlite.gz", method="auto")
 ```
 
-Use SQLite to connect to the SRA database
+Create the directory where we will bring in the SRA files:
 ```{r}
-library("SRAdb")
-sra_con <- dbConnect(dbDriver("SQLite"), srafile)
+sra_searchDirEBI <- paste(sharedPathAn, "sra_searchEBI", sep = "/")
+dir.create(sra_searchDirEBI, showWarnings = TRUE, recursive = FALSE)
 ```
 
-
-Get SRAs from EBI: These are those SRAs that were not on NCBI. Obtained these as their fastq.
+Use SQLite to connect to the SRA database and get SRAs from EBI: These are those SRAs that were not on NCBI. Obtained these as their fastq.
 ```{r}
 library("data.table")
-sra_searchDirEBI <- paste(sharedPathAn, "sra_searchEBI_2", sep = "/")
-dir.create(sra_searchDirEBI, showWarnings = TRUE, recursive = FALSE)
+library("SRAdb")
+timeStart <- proc.time()
+proc.time() - timeStart
+file.info(srafile)
+sra_con <- RSQLite::dbConnect(dbDriver("SQLite"), srafile)
 
 ## Fulltext search SRA meta data using SQLite fts3 module
-rs <- as.data.table(getSRA(search_terms = 'forest* decay ITS*', out_types=c('run','study'), sra_con=sra_con))
-rs2 <- as.data.table(getSRA(search_terms = 'ITS Quebec soil*', out_types=c('run','study'), sra_con=sra_con))
-rs3 <- as.data.table(getSRA(search_terms = 'ITS Quebec forest* soil', out_types=c('run','study'), sra_con=sra_con))
-rs4 <- as.data.table(getSRA(search_terms = 'ITS Ontario indoor', out_types=c('run','study'), sra_con=sra_con))
-rs5 <- as.data.table(getSRA(search_terms = 'indoor fungal', out_types=c('run','study'), sra_con=sra_con))
-rs6 <- as.data.table(getSRA(search_terms = 'indoor fungal decay', out_types=c('run','study'), sra_con=sra_con))
-rs7 <- as.data.table(getSRA(search_terms = 'building fungal decay', out_types=c('run','study'), sra_con=sra_con))
-rs8 <- as.data.table(getSRA(search_terms = 'fungal decay', out_types=c('run','study'), sra_con=sra_con))
+rs <- as.data.table(SRAdb::getSRA(search_terms = 'forest* decay ITS*', out_types=c('run','study'), sra_con=sra_con))
+rs2 <- as.data.table(SRAdb::getSRA(search_terms = 'ITS Quebec soil*', out_types=c('run','study'), sra_con=sra_con))
+rs3 <- as.data.table(SRAdb::getSRA(search_terms = 'ITS Quebec forest* soil', out_types=c('run','study'), sra_con=sra_con))
+rs4 <- as.data.table(SRAdb::getSRA(search_terms = 'ITS Ontario indoor', out_types=c('run','study'), sra_con=sra_con))
+rs5 <- as.data.table(SRAdb::getSRA(search_terms = 'indoor fungal', out_types=c('run','study'), sra_con=sra_con))
+rs6 <- as.data.table(SRAdb::getSRA(search_terms = 'indoor fungal decay', out_types=c('run','study'), sra_con=sra_con))
+rs7 <- as.data.table(SRAdb::getSRA(search_terms = 'building fungal decay', out_types=c('run','study'), sra_con=sra_con))
+rs8 <- as.data.table(SRAdb::getSRA(search_terms = 'fungal decay', out_types=c('run','study'), sra_con=sra_con))
 
 rsFull <- rbind(rs, rs2, rs3, rs4, rs5, rs6, rs7, rs8)
 rm(rs, rs2, rs3, rs4, rs5, rs6, rs7, rs8)
 
+# Terminate our SRA connection
+RSQLite::dbDisconnect(sra_con)
+```
+
+Look at the SRA results and remove irrelevant entries:
+```{r}
 length(unique(rsFull$run))
 rsUnique <- unique(rsFull, by = "run")
 excludeKeyWords <- c("China|Chinese|Idaho|tropical|Bolivian|agricul*|LUKAS|Gut|Spacecraft|space station|cadaver*|dental|kitchen sink*|*rabidopsis|oral|Oral|RNA*|*ranscriptom*|*exual")
@@ -190,14 +195,9 @@ rsRemoved1 <- rsUnique[!(study_title %like% excludeKeyWords)]
 
 rsRemoved1ExtraMeta <- sraConvert(in_acc = rsRemoved1$run, out_type = c("sra", "submission", "study", "sample", "experiment", "run"), sra_con = sra_con)
 rsRemoved1ExtraMeta <- as.data.table(rsRemoved1ExtraMeta)
-
-library("rentrez")
-apiKey <- "c7e1615b346269c43325b11d5823b4169a07"
-set_entrez_key(apiKey)
-entrez_db_searchable(db = "biosample")
 ```
 
-
+Here are the metadata elements we want to retrieve for each SRA run. We create empty columns that we will fill in in the next loop:
 ```{r}
 library("data.table")
 xx <- c("title", "uid", "accession", "publicationdate", "organisation", "taxonomy", "organism", "sourcesample", 
@@ -205,17 +205,31 @@ xx <- c("title", "uid", "accession", "publicationdate", "organisation", "taxonom
 for(i in xx)rsRemoved1ExtraMeta[,i] <- NA
 ```
 
+Set up our access to rentrez so that we can collect the metadata we want for our SRA runs. Note that I had to register to obtain the API key, and then copied it to the code over here. Each individual needs to do this themselves as the API key is associated to a user's account.
 ```{r}
+library("rentrez")
+apiKey <- "c7e1615b346269c43325b11d5823b4169a07"
 set_entrez_key(apiKey)
+entrez_db_searchable(db = "biosample")
+```
 
-dt1 <- rsRemoved1ExtraMeta
-
-# Note below could benefit of setting it up to use parallel, as done in later chunk to get fastq via ftp using sradb
+Collect metadata for each SRA run, via rentrez, in a loop. Note, the following are custom functions saved to the R folder and loaded with this script:    
+extractIsolationSource     
+extractSampleName    
+extractCollectionDate    
+extractGeographicLocation     
+extractGeoCoordinates     
+```{r}
 library("XML")
 library("stringr")
-for(i in 1:nrow(dt1)){
-  set_entrez_key(apiKey)
-  res <- entrez_search("biosample", term=dt1$sample[i])
+library("rentrez")
+
+# Use the dt table to build upon the metadata throughout the loop:
+dt <- rsRemoved1ExtraMeta
+
+for(i in 1:nrow(dt)){
+  rentrez::set_entrez_key(apiKey)
+  res <- entrez_search("biosample", term=dt$sample[i])
   esums <- entrez_summary("biosample", id = res$ids)
   title <- extract_from_esummary(esums, "title")
   uid <- extract_from_esummary(esums, "uid")
@@ -225,29 +239,30 @@ for(i in 1:nrow(dt1)){
   taxonomy <- extract_from_esummary(esums, "taxonomy")
   organism <- extract_from_esummary(esums, "organism")
   sourcesample <- extract_from_esummary(esums, "sourcesample")
-  dt1$title[i] <- title
-  dt1$uid[i] <- uid
-  dt1$accession[i] <- accession
-  dt1$publicationdate[i] <- publicationdate
-  dt1$organisation[i] <- organisation
-  dt1$taxonomy[i] <- taxonomy
-  dt1$organism[i] <- organism
-  dt1$sourcesample[i] <- sourcesample
+  dt$title[i] <- title
+  dt$uid[i] <- uid
+  dt$accession[i] <- accession
+  dt$publicationdate[i] <- publicationdate
+  dt$organisation[i] <- organisation
+  dt$taxonomy[i] <- taxonomy
+  dt$organism[i] <- organism
+  dt$sourcesample[i] <- sourcesample
   sampledata <- extract_from_esummary(esums, "sampledata")
   raw_html <- textutils::HTMLdecode(sampledata)
   parsed_html <- XML::htmlTreeParse(raw_html, useInternalNodes = TRUE) 
-  dt1$isolationSource[i] <- extractIsolationSource(parsed_html)
-  dt1$sampleName[i] <- extractSampleName(parsed_html)
-  dt1$collectionDate[i] <- extractCollectionDate(parsed_html)
-  dt1$geographicLocation[i] <- extractGeographicLocation(parsed_html)
-  dt1$geoCoordinates[i] <- extractGeoCoordinates(parsed_html)
-  print(dt1[i])
+  dt$isolationSource[i] <- extractIsolationSource(parsed_html)
+  dt$sampleName[i] <- extractSampleName(parsed_html)
+  dt$collectionDate[i] <- extractCollectionDate(parsed_html)
+  dt$geographicLocation[i] <- extractGeographicLocation(parsed_html)
+  dt$geoCoordinates[i] <- extractGeoCoordinates(parsed_html)
+  print(dt[i])
   Sys.sleep(0.54) # Set a delay for api restriction issues, unless you set an api key
 }
 ```
 
-Let's see what we have collected from our biosample metadata:
+Let's see what we have collected from our biosample metadata. Based on the keywords we find in the geographic location, we can exclude many of the non-relevant SRAs:
 ```{r}
+library("data.table")
 unique(dt$organisation)
 unique(dt$geographicLocation)
 
@@ -260,90 +275,452 @@ table(filteredDT$geographicLocation)
 unique(filteredDT$isolationSource)
 table(filteredDT$organism)
 ```
-
-The very slow way....:
+From a previous run of this pipeline, I know that there are no fastq files associated with the following SRAs and so I remove them now from our set:    
+ERR1864558    
+ERR1864569      
+ERR1864590     
+ERR1864595    
+     
+Also, I previously noticed that there are some very large SRA files that are not worth getting since they are not really relevant to what we want. In the interest of computational resources, I'm removing them. I also am removing all those with organisation details as "Laboratory of Fungal Genomics and Evolution, Institute of Biochemistry, Synthetic and Systems Biology Unit, Biological Research Centre, Hungarian Academy of Sciences".          
+SRR3500549  Sample from Fibularhizoctonia sp. CBS 109695
+SRR3928183  Generic sample from Jaapia argillacea MUCL 33604    
+SRR1144937  California Institute of Technology, Jet Propulsion Laboratory     
+     
+Also, the following SRAs have sequence errors, and are also not relevant (learned this the hard way downstream):     
+SRR7813209    All of these from University of Minnesota, Postia placenta
+SRR7813210    
+SRR7813212    
+SRR7813215    
+SRR7813216    
+SRR7813217    
+SRR7813218    
+SRR7813220    
+SRR7813221    
+SRR7813223    
+SRR7813224
+SRR7813225    
+SRR7813226    
+SRR7813228    
+SRR7813231    
 ```{r}
-library("SRAdb")
+library("data.table")
+excludeSRAs <- c("ERR1864558|ERR1864569|ERR1864590|ERR1864595|SRR3500549|SRR3928183|SRR1144937")
+filteredDT <- filteredDT[!(run %like% excludeSRAs)]
+table(filteredDT$run)
+
+# Exclude those with organism "Postia placenta":
+excludeOrganisms <- "Postia placenta"
+filteredDT <- filteredDT[!(organism %like% excludeOrganisms)]
+
+table(filteredDT$organisation)
+excludeOrganisations <- c("Laboratory of Fungal Genomics and Evolution, Institute of Biochemistry, Synthetic and Systems Biology Unit, Biological Research Centre, Hungarian Academy of Sciences|Biodiversity and Biotechnology of Fungi - BBF, INRA - Aix Marseille University|UC BERKELEY|UC Berkeley|UW/FPL|European Bioinformatics Institute")
+filteredDT <- filteredDT[!(organisation %like% excludeOrganisations)]
+```
+
+Print a list of the SRAs remaining:
+```{r}
+library("data.table")
+write.table(filteredDT$run, file = paste(sharedPathAn, "srasList.txt", sep = "/"), row.names = FALSE, col.names = FALSE, quote = FALSE)
+```
+
+**** Note - I downloaded all the SRAs from the list of filtered SRAs written in the previous chunk. Then I continued on with the script and further eliminated problematic files, trimming the SRA list even further. Here I'm just capturing the files that remained and updating my set. Because some of the fastq files have problems, I need to re-download them anew to see if that fixes things. 
+```{r}
+# Get an updated metadata table for the sra fastqs we successfully obtained, and record their file names and paths:
+library("data.table")
+sraFqs <- data.table(basename=list.files(sra_searchDirEBI))
+sraFqs$run <- gsub(".fastq.gz|.fastq", "", sraFqs$basename)
+sraFqs$run <- gsub("_1|_2", "", sraFqs$run)
+fqgzList <- sraFqs[which(sraFqs$run %in% filteredDT$run)]
+
+setkey(fqgzList, run)
+head(fqgzList)
+setkey(filteredDT, run)
+head(filteredDT)
+
+fqDT <- filteredDT[fqgzList]
+fqDT$fqPath <- paste(sra_searchDirEBI, fqDT$basename, sep = "/")
+
+# create a new list of SRAs to download:
+library("data.table")
+write.table(fqDT$run, file = paste(sharedPathAn, "srasListFurtherFiltered.txt", sep = "/"), row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+# print the metadata table "fqDT" to file:
+tblName <- "SRA_metadata_from_fqDT"
+
+fwrite(fqDT, file = paste(sharedPathAn, "/", tblName, ".csv", sep = ""), 
+       append = FALSE, sep = ",",
+       row.names = FALSE, col.names = TRUE, quote = FALSE)
+```
+
+The very slow way to download the fastq for the sras, then see what we have after....:
+```{r}
+packages <- c("data.table", "SRAdb")
+lapply(packages, library, character.only = TRUE)
+
+timeStart <- proc.time()
+proc.time() - timeStart
+file.info(srafile)
 sra_con <- dbConnect(dbDriver("SQLite"), srafile)
 
-getSRAfile(in_acc = filteredDT$run, sra_con = sra_con, destDir = sra_searchDirEBI, 
+getSRAfile(in_acc = fqDT$run, sra_con = sra_con, destDir = sra_searchDirEBI, 
            fileType = 'fastq', srcType = 'ftp', makeDirectory = FALSE, method = 'curl', ascpCMD = NULL)
-```
 
-# See what was downloaded:
-```{r}
-library("data.table")
+# See which SRAs were downloaded and then see which are still missing, if any. Then repeat to fetch the remaining SRAs:
 sraFqs <- list.files(sra_searchDirEBI)
-srasMissing <- srasToGet(sraFqs, filteredDT)
-```
+srasMissing <- fqDT[which(!(fqDT$basename %in% sraFqs))]
 
-Try to get the remaining SRA fastq files that were not obtained on the first try:    
-Note that it is possible to write it as a qsub that will load the R environment and packages and run the command.
-```{r}
-library("SRAdb")
+timeStart <- proc.time()
+proc.time() - timeStart
+file.info(srafile)
 sra_con <- dbConnect(dbDriver("SQLite"), srafile)
 
-# The following will make use of multi-thread processing to download the SRA fastq files in parallel:
-library("parallel")
-library("foreach")
-library("doParallel")
-library("doSNOW")
+getSRAfile(in_acc = srasMissing$run, sra_con = sra_con, destDir = sra_searchDirEBI, 
+           fileType = 'fastq', srcType = 'ftp', makeDirectory = FALSE, method = 'curl', ascpCMD = NULL)
 
-cluster <- makeCluster(detectCores() - 1)
-registerDoParallel(cluster, cores = detectCores() - 1)
-
-progress <- function(n) cat(sprintf("task %d is complete\n", n))
-opts <- list(progress=progress)
-
-foreach::foreach(i = 1:length(srasToGet$run), .options.snow = opts, .errorhandling = 'pass') %dopar% {
-  library("SRAdb")
-  sra_con <- dbConnect(dbDriver("SQLite"), srafile)
-  cat(sprintf("Processing task ", i, ":"))
-  getSRAfile(in_acc = srasToGet$run[i], sra_con = sra_con, destDir = sra_searchDirEBI, fileType = 'fastq', 
-               srcType = 'ftp', makeDirectory = FALSE, method = 'curl', ascpCMD = NULL)
-  }
-stopCluster(cluster)
+dbDisconnect(sra_con)
 ```
 
-Check to see if all files were downloaded, and if not, run the commands below to update srasToGet and re-run the loop above. Note - this is really fast when run on R command line on the cluster.
+Remove all the reverse *_2.fastq.gz read files, not needed, saves space. I did this quickly on the command line, but the r code for it is below:
+```{r}
+# packages <- c("data.table", "parallel", "foreach", "doParallel", "doSNOW", "Biostrings", "R.utils")
+# lapply(packages, library, character.only = TRUE)
+
+# timeStart <- proc.time()
+# proc.time() - timeStart
+# file.info(srafile)
+# sra_con <- dbConnect(dbDriver("SQLite"), srafile)
+
+# cluster <- makeCluster(detectCores() - 1)
+# registerDoParallel(cluster, cores = detectCores() - 1)
+# cluster
+
+# fqgzList <- list.files(sra_searchDirEBI, pattern = "*_2.fastq.gz|*_2.fastq", full.names = TRUE)
+# foreach::foreach(i = 1:length(fqgzList), .errorhandling = 'pass') %dopar% {
+#   cat(sprintf("Processing task ", i))
+#   base::file.remove(fqgzList[i])
+#   }
+# stopCluster(cluster)
+# dbDisconnect(sra_con)
+```
+
+Get an updated metadata table for the sra fastqs we successfully obtained, and record their file names and paths:
 ```{r}
 library("data.table")
-sraFqs <- list.files(sra_searchDirEBI)
-srasMissing <- srasToGet(sraFqs, filteredDT)
+sraFqs <- data.table(basename=list.files(sra_searchDirEBI))
+sraFqs$run <- gsub(".fastq.gz|.fastq", "", sraFqs$basename)
+sraFqs$run <- gsub("_1|_2", "", sraFqs$run)
+fqgzList <- sraFqs[which(sraFqs$run %in% fqDT$run)]
 
-length(srasToGet$run)
-
-write.table(srasToGet$run, row.names = FALSE, col.names = FALSE, quote = FALSE, path = paste(sharedPathAn, srasNotRetrieved.txt, sep = "/"))
-```
-Note that I checked the SRAs below directly on ebi sra search and they actually have no fastq files, so there is nothing to do but omit these:    
-ERR1864558 Does not have a fastq file    
-ERR1864569 Does not have a fastq file    
-ERR1864590 Does not have a fastq file    
-ERR1864595 Does not have a fastq file    
-
-When all the fastq files have been downloaded except those that consistently fail, they may be obtained using the prefetch function from the SRA-toolkit prefetch with parallel command on the cluster terminal within a dedicated conda environment, insilicoPrimer. Also, the downloaded files go to a new ~/ncbi directory unless fixing the code to download to desired location.    
-After obtaining the SRA fils using parallel with prefetch, use the parallel-fastq-dump that works with the sra-toolkit, fastq-dump and parallel to speed things up when converting SRA files to fastq on a qlogin with multiple cores. The conda package parallel-fastq-dump requires parallel and the sra-toolkit to be previously installed to work:
-```{bash}
-$ qlogin -pe smp 12
-$ conda activate insilicoPrimer
-$ conda install sra-tools parallel-fastq-dump parallel -c bioconda -c conda-forge
-$ pirl
-$ cd serpulaLacrymans
-$ parallel -j 1 prefetch {} ::: $(cat srasNotRetrieved.txt)
-$ cd ~/ncbi/public/sra
-$ parallel-fastq-dump -s ./*.sra --threads 12 -outdir ~/PIRL_working_directory/serpulaLacrymans/sra_searchEBI_2/ --split-files --gzip
+# See which SRAs were downloaded and then see which are still missing, if any. Then repeat to fetch the remaining SRAs:
+sraFqs <- data.table(basename=list.files(sra_searchDirEBI))
+sras <- fqDT[which(fqDT$basename %in% sraFqs$basename)]
+fqDT2 <- sras
 ```
 
+### BLAST method     
+For going the blast route, uncompress the merged.fq.fa file. Then use seqtk to convert it to fasta format:     
+
+### Full set:
+For the Full fastq gz file, there is a problem making it crash when unzipping - probably too large a file. Will try:
+- copy individual fastq.gz files to fullSRA directory
+- gunzip the fastq.gz files
+- run fq2fa on individual fastq files
+- merge individual fasta files
+```{r}
+prefix <- "cp_gunzip_FqSRAFull"
+cmd <- paste("cd ", sharedPathAn, " && cp ", fqDT2$fqPath,  " ", fullSRA, "/", fqDT2$basename, 
+             " && cd ", fullSRA, 
+             " && gunzip ", fullSRA, "/", fqDT2$basename, sep = "") 
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+fqDT2$basenameFqUngz <- gsub(".gz", "", fqDT2$basename)
+fqDT2$basenameFaUngz <- gsub(".fastq", ".fa", fqDT2$basenameFqUngz)
+```
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+# Look at output files, to see if any caused problems - these files should be removed so as not to break the pipeline. All good files should be 0 size. This will sort logs by size, and the ones at the bottom are files that are larger and indicate an error or problem occurred. 
+
+$ ls -Srl cp_gunzip_FqSRAFull/*.sub.e*
+-rw-r--r-- 1 CFIA-ACIA+girouxeml CFIA-ACIA+domain users 147 Jul  8 11:52 cp_gunzip_FqSRAFull/cp_gunzip_FqSRAFull2024.sub.e922938
+-rw-r--r-- 1 CFIA-ACIA+girouxeml CFIA-ACIA+domain users 162 Jul  8 11:54 cp_gunzip_FqSRAFull/cp_gunzip_FqSRAFull2026.sub.e922940
+-rw-r--r-- 1 CFIA-ACIA+girouxeml CFIA-ACIA+domain users 164 Jul  8 11:54 cp_gunzip_FqSRAFull/cp_gunzip_FqSRAFull2029.sub.e922943
+
+# These subs correspond to the following SRAs (use cat on these subs to see the run IDs):
+cp_gunzip_FqSRAFull2024.sub.e922938 = cp_gunzip_FqSRAFull2024.sub = run SRR3500546
+cp_gunzip_FqSRAFull2026.sub.e922940 = cp_gunzip_FqSRAFull2026.sub = run SRR3500548
+cp_gunzip_FqSRAFull2029.sub.e922943 = cp_gunzip_FqSRAFull2029.sub = run SRR3928184
+```{r}
+# Check the data for these in the fqDT2 table:
+library("data.table")
+setkey(fqDT2, "run")
+bad <- fqDT2[.(c("SRR3500546", "SRR3500548", "SRR3928184"))]
+
+# Remove these from the fqDT2 set:
+fqDTdropBad <- fqDT2[!.(c("SRR3500546", "SRR3500548", "SRR3928184"))]
+
+# Delete the fasta files for these from the fullSRA directory, since they failed, they will present in their .gz format:
+unlink(paste(fullSRA, bad$basename, sep = "/")) # Deletes bad files
+file.exists(paste(fullSRA, bad$basename, sep = "/")) # checks if files are actually gone
+
+fqDT2 <- fqDTdropBad
+rm(fqDTdropBad)
+```
+
+# Convert fastq to fa format
+```{r}
+prefix <- "fq2faFullSRASet"
+cmd <- paste("conda activate insilicoPrimer && cd ", fullSRA,
+             " && seqtk seq -a ", paste(fullSRA, fqDT2$basenameFqUngz, sep = "/"), 
+             " > ", paste(fullSRA, fqDTdropBad$basenameFaUngz, sep = "/"), 
+             " && conda deactivate", sep = "")
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+# Don't forget to make sure no errors occured by checking for log files with greater than 0 size, as in previous step
+```
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+- take opportunity to filter the reads, remove all those entries with min length less than 25, also remove those by entropy to discard reads that are all TTTT or AAAAs before merging the files into one big fa. bbduk may be able to accomplish this quickly.     
+Note - it may have been better to do this on the fastq files, since bbduk uses quality info during processing.
+```{r}
+prefix <- "processSRAFasta"
+cmd <- paste("conda activate insilicoPrimer && cd ", fullSRA,
+             " && bbduk.sh in=", paste(fullSRA, fqDT2$basenameFaUngz, sep = "/"),
+             " out=", paste(fullSRA, paste("clean_", fqDT2$basenameFaUngz, sep = ""), sep = "/"),
+             " minlen=25 maxns=-1 tossjunk=t trimpolya=15 interleaved=f", 
+             " && conda deactivate ", sep = "")
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+```
+# cat of all good fa files:
+```{r}
+prefix <- "catFullFaClean"
+cmd <- paste("cd ", fullSRA, " && cat clean_*.fa > merged.fa ", sep = "")
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+faFullPath <- paste(fullSRA, "merged.fa", sep = "/")
+```
+
+# Clean up temporary files:
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+*** Note:    
+On the command line I removed all the characters after the first space in the fasta header using awk:    
+$ awk '/^>/ {$0=$1} 1' merged.fa > cleaned.merged.fa
+    
+
+### Make a blast database of the full merged fa file:
+```{r}
+faCleanFullPath <- paste(fullSRA, "cleaned.merged.fa", sep = "/")
+blastDBFull <- paste(sharedPathAn, "blastdb", sep = "/")
+dir.create(blastDBFull, showWarnings = TRUE, recursive = FALSE)
+
+prefix <- "makeblastDB_cleanfull"
+cmd <- paste("conda activate insilicoPrimer && cd ", blastDBFull, 
+             " && makeblastdb -in ", faCleanFullPath,
+             " -dbtype nucl -out sraCleanFull -logfile sraCleanFull.log && conda deactivate", sep = "")
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+```
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+Split the blast database volumes (total 236) into 3 separate directories, so that there are no more than 100 volumes per directory. This will prevent an error in downstream blast runs where the full blast database ends up having a negative total number of sequences in the summary and returns zero hits when running blast on it.    
+```{r}
+subdirs <- c("blastdbTo100_volSubset", "blastdbFrom101_volSubset", "blastdbFrom201_volSubset")
+for (j in 1:length(subdirs)){
+  folder<-dir.create(paste0(sharedPathAn, "/", subdirs[j]))
+}
+```
+Copy the blastdb/sraCleanFull.nal, blastdb/sraCleanFull.log, blastdb/sraCleanFull.perl to each of the newly created directories.    
+Open a text editor and edit the sraCleanFull.nal files in each directory to list only the volumes in the subset directories. For example, in the blastdbTo100_volSubset/sraCleanFull.nal delete all names of volumes above 100.    
+     
+Load up each of the blast databases:
+```{r}
+devtools::install_github("mhahsler/rBLAST")
+library("rBLAST")
+
+# Full blastDB paths to subset databases:
+blTo100path <- paste(sharedPathAn, subdirs[1], "sraCleanFull", sep = "/")
+blTo100 <- rBLAST::blast(db=blTo100path)
+blTo100
+
+blFrom101path <- paste(sharedPathAn, subdirs[2], "sraCleanFull", sep = "/")
+blFrom101 <- rBLAST::blast(db=blFrom101path)
+blFrom101
+
+blFrom201path <- paste(sharedPathAn, subdirs[3], "sraCleanFull", sep = "/")
+blFrom201 <- rBLAST::blast(db=blFrom201path)
+blFrom201
+```
+
+Blast our in-silico probes against the custom databases we've built:    
+If you get the error:     
+Error: Executable for blastn not found! Please make sure that the software is correctly installed and, if necessary, path variables are set.     
+You need to find where blastn is onyour system and add it to the system paths:     
+```{r}
+?blast     
+Sys.which("blastn")     
+Sys.getenv("PATH")    
+# [1] "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"     
+Sys.setenv(PATH=paste(Sys.getenv("PATH"), "/opt/bio/ncbi-blast+/bin", sep= .Platform$path.sep))     
+Sys.getenv("PATH")
+# [1] "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/opt/bio/ncbi-blast+/bin/blastn:/opt/bio/ncbi-blast+/bin"     
+Sys.which("blastn")     
+# "/opt/bio/ncbi-blast+/bin/blastn"      
+```
+
+Query the probes to the databases:
+```{r}
+custFmt <- "qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore sseq"
+# Volumes 00-100
+library("rBLAST")
+clto100_1 <- predict(blTo100, slacrymansITSprobes[1], custom_format = custFmt)
+clto100_2 <- predict(blTo100, slacrymansITSprobes[2], custom_format = custFmt)
+clto100_3 <- predict(blTo100, slacrymansITSprobes[3], custom_format = custFmt)
+
+# Volumes 101-200
+clfrom101_1 <- predict(blFrom101, slacrymansITSprobes[1], custom_format = custFmt)
+clfrom101_2 <- predict(blFrom101, slacrymansITSprobes[2], custom_format = custFmt)
+clfrom101_3 <- predict(blFrom101, slacrymansITSprobes[3], custom_format = custFmt)
+
+# Volumes 201-236
+clfrom201_1 <- predict(blFrom201, slacrymansITSprobes[1], custom_format = custFmt)
+clfrom201_2 <- predict(blFrom201, slacrymansITSprobes[2], custom_format = custFmt)
+clfrom201_3 <- predict(blFrom201, slacrymansITSprobes[3], custom_format = custFmt)
+
+clAll <- rbind(clto100_1, clto100_2, clto100_3, clfrom101_1, clfrom101_2, clfrom101_3, clfrom201_1, clfrom201_2, clfrom201_3)
+clAll$SRA <- gsub("\\..*", "", clAll$saccver)
+table(clAll$SRA)
+```
 
 
-Identify certain reads that contain a specific sequence
 
-$ bbduk.sh in=reads.fq out=unmatched.fq outm=matched.fq literal=ACGTACGTACGTACGTAC k=18 mm=f hdist=2
 
-Make sure "k" is set to the exact length of the sequence. "hdist" controls the number of substitutions allowed. "outm" gets the reads that match. By default this also looks for the reverse-complement; you can disable that with "rcomp=f". 
+
+### Troubleshooting efforts:     
+*** Over here!!! 13July2020 making the blast db failed, error: "BLAST Database creation error: Near line 1895074312, there's a line that doesn't look like plausible data, but it's not marked as defline or comment."    
+I looked at the line in the fasta file, there is noting wrong with the sequence entry - now trying pyfasta to split the merged.fa file into 10 equal subsets, and work on each individually.    
+*** Try to split the full fasta file and work with subsets:    
+- Tried $ pyFasta split -n 10 merged.fa - failed - program makes a flat file first, then splits. Make the flat file didn't complete - took too long and network connection timed out.    
+- Tried $ faSplit sequence merged.fa 10 merged, and $ faSplit about merged.fa 100000000000 outMerged - does not work. First method just splits into thousands of files, each a single fasta entry, and the second method limits files to less than 1 Gb, resulting in hundreds of files.     
+- Tried pyfastax - inspired by pyfasta, this builds an sqlite index first to save memory and then splits the file. Note that building the index takes time proportional to the size of the file. Our file is 604 Gb, so it will take a while. After the index is built, no need to repeat it and it can be reused for the various other command options available in the package. The index was built, but then there was an error, 10 fa files were created, but with only about 10 sequences per file.     
+- Tried with awk: $ awk 'BEGIN {n_seq=0;} /^>/ {if(n_seq%100000000==0){file=sprintf("mergedSeq%d.fa",n_seq);} print >> file; n_seq++; next;} { print >> file; }' < merged.fa # This seems to be working. A quick look using tail on one fa file points out that some entries have sequences less than 10 bp length - perhaps I should run a processing step to remove short sequences.
 
 ```{r}
+prefix <- "fasplit_test2"
+cmd <- paste("conda activate insilicoPrimer && cd ", fullSRA,
+             " && pyfasta split -n 2 merged.fa  ", 
+             " && conda deactivate ", sep = "")
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+```
 
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+
+See which SRAs were hits on the very first run of this pipeline that included SRAs from Europe and around the world:
+```{r}
+worldHitsBlast <- unique(clAllresults$SRA)
+
+# See which SRA from this list are included in our current set of SRAs:
+
+```
+
+
+$ qlogin -pe smp 20
+$ conda activate insilicoPrimer
+$ cd /home/CFIA-ACIA/girouxeml/PIRL_working_directory/serpulaLacrymans/sra_searchEBI_2
+
+function fastqCleaner(){ 
+zcat "$1" | perl /home/CFIA-ACIA/girouxeml/PIRL_working_directory/serpulaLacrymans/fastq_cleaner.pl /dev/stdin "${1}".clean "${1}".malformed; 
+}
+$ export -f fastqCleaner
+$ find $(pwd) -name "*.gz" | parallel --bar --env fastqCleaner --jobs 20 'fastqCleaner {}'
+
+Remove all the malformed fastq files
+create one big <SRA>.clean.fq file that includes all the <SRA>.clean.fq
+$ cat *.fastq.gz.clean >> merged.clean.fq
+
+test this file with bbduk.sh
+
+Currently I am running makeblastdb using the all.fasta merged file - but since this wasn't passed through my fastqCleaner function, there may be problems in this fasta file that cause this to fail. If so, convert the merged.clean.fq to fasta format and try to make the blast db again.
+
+$ watch 'ls -lrt *.out | wc -l'
+
+Or for trying to continue with makeing a blastdb using merged fasta:
+$ cat sra_searchEBI_2/*.fasta >> all.fasta
+
+
+I tried to use the full database for blast "sraCleanFull", but there is a problem and no hits are returned. Notice that the total sequences in the db are a '-' negative number. So I went and checked each volume of the database separately, sraCleanFull.00, sraCleanFull.01, ..., sraCleanFull.236, and found volumes that returned hits:     
+sraCleanFull.02    
+sraCleanFull.04    
+sraCleanFull.19    
+sraCleanFull.20    
+sraCleanFull.187    
+sraCleanFull.188    
+```{r}
+devtools::install_github("mhahsler/rBLAST")
+library("rBLAST")
+
+blastDBFullpath <- paste(blastDBFull, "sraCleanFull", sep = "/") # adding the ".00" tests the subset of the blast db being created.
+bl <- rBLAST::blast(db=blastDBFullpath)
+bl
+
+# Query the probes to the blpairedR1s database:
+library("rBLAST")
+clFull1 <- predict(bl, slacrymansITSprobes["slacrymans136_220_ITS",], custom_format = "qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore sseq")
+
+clFull1$SRA <- gsub("\\..*", "", clFull1$saccver)
+table(clFull1$SRA)
+
+clFull2 <- predict(bl, slacrymansITSprobes["slacrymans403_494_ITS",], custom_format = "qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore sseq")
+clFull2$SRA <- gsub("\\..*", "", clFull2$saccver)
+table(clFull2$SRA)
+
+clFull3 <- predict(bl, slacrymansITSprobes["slacrymans550_656_ITS",], custom_format = "qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore sseq")
+clFull3$SRA <- gsub("\\..*", "", clFull3$saccver)
+table(clFull3$SRA)
+
+library("data.table")
+clFullAllresults <- rbind(clFull1, clFull2, clFull3)
+
+
+# After first pass, with sraCleanFull.02, capture the datatable in a new dt, just once. Then comment this line out, and rbind the subsequent results with this new dt:    
+#clFullAll <- clFullAllresults
+
+clFullAll <- rbind(clFullAll, clFullAllresults)
+```
+
+
+
+
+
+```{r}
+# seqtk seq -a in.fastq.gz > out.fasta
+prefix <- "fq2fa"
+cmd <- paste("conda activate insilicoPrimer && cd ", sra_searchDirEBI,
+             " && seqtk seq -a ", fqDT$fqPath,  
+             " > ", paste(fqDT$run, ".fasta", sep = ""),
+             " && conda deactivate", sep = "")
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+```
+
+
+```{r}
+prefix <- "pigzFq"
+cmd <- paste("conda activate insilicoPrimer && cd ", sra_searchDirEBI,
+             " && pigz -p 30 -f *.fastq && conda deactivate", sep = "")
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+
+cmd <- paste("cd ", paste(sharedPathAn, prefix, sep = "/"), " && /opt/gridengine/bin/lx-amd64/qsub -pe smp 50 -cwd -S /bin/bash pigzFq1.sub ", sep = "")
+sapply(cmd, function(x) system(x))
 ```
 
 
@@ -425,6 +802,7 @@ suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
 RemoveQsubTempFiles(sharedPathAn, prefix)
 ```
 
+
 After completion of "fastq2fastas":
 Gzip the fastq files:
 ```{r}
@@ -496,54 +874,6 @@ suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
 RemoveQsubTempFiles(sharedPathAn, prefix)
 ```
 
-Blast our in-silico probes against the custome databases we've built:    
-If you get the error:     
-Error: Executable for blastn not found! Please make sure that the software is correctly installed and, if necessary, path variables are set.     
-You need to find where blastn is onyour system and add it to the system paths:     
-$ which blastn    
-/opt/bio/ncbi-blast+/bin/blastn     
-
-In R-console:
-```{r}
-?blast     
-Sys.which("blastn")     
-Sys.getenv("PATH")    
-# [1] "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"     
-Sys.setenv(PATH=paste(Sys.getenv("PATH"), "/opt/bio/ncbi-blast+/bin", sep= .Platform$path.sep))     
-Sys.getenv("PATH")
-# [1] "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/opt/bio/ncbi-blast+/bin/blastn:/opt/bio/ncbi-blast+/bin"     
-Sys.which("blastn")     
-# "/opt/bio/ncbi-blast+/bin/blastn"      
-```
-
-```{r}
-devtools::install_github("mhahsler/rBLAST")
-library("rBLAST")
-
-blastDBpath <- paste(blastDB, "sraFastaDB", sep = "/")
-bl <- blast(db=blastDBpath)
-```
-
-
-Query the probes to the blpairedR1s database:
-```{r}
-library("rBLAST")
-cl1 <- predict(bl, slacrymansITSprobes["slacrymans136_220_ITS",], custom_format = "qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore sseq")
-
-cl1$SRA <- gsub("\\..*", "", cl1$saccver)
-table(cl1$SRA)
-
-cl2 <- predict(bl, slacrymansITSprobes["slacrymans403_494_ITS",], custom_format = "qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore sseq")
-cl2$SRA <- gsub("\\..*", "", cl2$saccver)
-table(cl2$SRA)
-
-cl3 <- predict(bl, slacrymansITSprobes["slacrymans550_656_ITS",], custom_format = "qaccver saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore sseq")
-cl3$SRA <- gsub("\\..*", "", cl3$saccver)
-table(cl3$SRA)
-
-library("data.table")
-clAllresults <- rbind(cl1, cl2, cl3)
-```
 
 Get metadata for all unique SRAs in the clAllResTbl
 ```{r}
@@ -654,4 +984,80 @@ blastHitSeqsSet <- DNAStringSet(blastHitSeqs$sseq)
 names(blastHitSeqsSet) <- blastHitSeqs$saccver
 writeXStringSet(blastHitSeqsSet, paste(sharedPathAn, "sequencesOfBlastHits.fasta", sep = "/"))
 head(blastHitSeqsSet)
+```
+
+Unidentified downstream errors led to no hits found. Trying to process the merged fasta file to make sure there are no sequence entries with headers and no sequence, or completely masked sequence:     
+$ awk -v RS=">" -v FS="\n" -v ORS="" ' { if ($2) print ">"$0 } ' cleaned.merged.fa > cleaned.merged.noEmptySeqs.fa     
+*** Note - the above made no difference, no change in file size from input.     
+
+Take a subset of the sra fastq files to work with and test pipeline:
+```{r}
+library("data.table")
+setkey(fqDT2, "geographicLocation")
+subset <- fqDT2[.("Canada: Quebec")]
+
+# I added the SRAs that gave positive hits in the first run of this pipeline. These also made it past the updated filtering parameters for relevant studies and are included in fqDT and fqDT2 (our current full set of SRAs):
+# posSRAs <- c("SRR5985538", "SRR5985539", "SRR5985540", "SRR5985542", "SRR5985543", "SRR5985544", "SRR5985545")
+setkey(fqDT2, "run")
+posToSubset <- fqDT2[.(c("SRR5985538", "SRR5985539", "SRR5985540", "SRR5985542", "SRR5985543", "SRR5985544", "SRR5985545"))]
+
+subset1 <- rbind(subset, posToSubset)
+
+# Create a directory to hold a subset of the SRAs - subset1:
+sraSubsetDir <- paste(sharedPathAn, "sra_searchEBI_subset1", sep = "/")
+dir.create(sraSubsetDir, showWarnings = TRUE, recursive = FALSE)
+
+# Copy all the SRAs in our subset to the new subset directory:
+prefix <- "cp_subset1"
+cmd <- paste("cd ", sharedPathAn, " && cp ", subset1$fqPath, " sra_searchEBI_subset1/", subset1$basename, sep = "")
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+
+# **To remove the output files after you are done:**
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+### BBDUK method:
+Identify certain reads that contain a specific sequence using bbduk.sh from the BBMap package. Normally this is used for contaminant-filtering via kmer matching, but we can use it to find hits via kmer-matching just the same:     
+
+# Firstly: NOT going this route! copy files and gunzip individually, then cat for fastq, or convert to fasta then cat for BLAST.
+Concatenate all the fastq.gz files into one big merged fq.gz file that will be used as input for bbduk.sh:
+```{r}
+# For cat of all files, not just subset:
+fullSRA <- paste(sharedPathAn, "fullSRA", sep = "/")
+dir.create(fullSRA, showWarnings = TRUE, recursive = FALSE)
+
+# prefix <- "catFullFqgz"
+# cmd <- paste("cd ", fullSRA, " && cat ../sra_searchEBI/*fastq.gz > merged.fq.gz", sep = "")
+# suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+# fqFullPathGz <- paste(fullSRA, "merged.fq.gz", sep = "/")
+```
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+Generate a bbduk.sh command to run via qsub. The package said to make sure "k" is set to the exact length of the sequence, but Marco suggested reducing this size and setting "hdist" controls for the number of substitutions allowed to 1. "outm" gets the reads that match. By default this also looks for the reverse-complement; you can disable that with "rcomp=f". According to the bbduk documentation, this is a method of Kmer filtering that allows you to split a set of reads based on the presence of something. "stats" will produce a report of which contaminant sequences were seen, and how many reads had them. This guide document is located at ~/prog/anaconda3/envs/insilicoPrimer/opt/bbmap-38.22-0/docs/guides/BBDukGuide.txt. 
+
+*** Over here!!!! 13July2020
+### BBDUK retrying:    
+Added "interleaved=f", "mm=f", "mcf=0.5", "rcomp=f" and modified k=14. Also, using fasta file as input instead of fastq.
+```{r}
+library("Biostrings")
+kmerleng <- Biostrings::nchar(slacrymansITSprobes[3])
+kmerProbe <- slacrymans550_656_ITS
+probeFile <- paste(sharedPathAn, "slacrymansITS_probe3_550-656.fq", sep = "/")
+prefix <- "bbduk_fullFa4"
+cmd <- paste("conda activate insilicoPrimer && cd ", paste(sharedPathAn, prefix, sep = "/"),
+             " && bbduk.sh ",
+             " in=", faFullPath, 
+             " ref=", probeFile,
+             " k=27 hdist=1 stats=stats.txt",
+             " outm=matchToFaFull.fa nzo=t statscolumns=5",
+             " tossjunk=t interleaved=f mm=f rcomp=f ",
+             " && conda deactivate", sep = "")
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+```      
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
 ```
